@@ -1,0 +1,3 @@
+ZabbixAgent	KEYWORD1
+listen 		KEYWORD2
+answer		KEYWORD2
