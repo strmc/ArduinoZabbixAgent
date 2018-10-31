@@ -21,8 +21,7 @@
 
 #include "ZabbixAgent.h"
 
-ZabbixAgent::ZabbixAgent(Server serverSocket){
-	_serverSocket = serverSocket;
+ZabbixAgent::ZabbixAgent(WiFiServer& serverSocket): _serverSocket(serverSocket){
 }
 
 /*
@@ -30,23 +29,22 @@ ZabbixAgent::ZabbixAgent(Server serverSocket){
 	returns the itemkey requested by Zabbix or an empty String if something went wrong.
 */
 String ZabbixAgent::listen(){
-	
 	//needed variables
-	_socket = _serverSocket.available();
 	byte length[8];
 	String msg = "";
 	
 	//wait for the Zabbix server to connect
-	while(!client.connected()){
-		;
+	do{
+		_socket = _serverSocket.available();
+		yield();
 	}
+	while(!_socket.connected());
 	
 	//starts when the Zabbix server connected
-	if(client.connected()){
-		
+	if(_socket.connected()){
 		//wait for the socket to be ready for communication
-		while(!client.available()){
-			;
+		while(!_socket.available()){
+			yield();
 		}
 		
 		//the actual receive
@@ -63,16 +61,15 @@ String ZabbixAgent::listen(){
 		//
 		//			HEADER							DATALENGTH									DATA
 		//  ( 'Z' 'B' 'X' 'D' 0x01 | 0x0A 0x00 0x00 0x00 0x00 0x00 0x00 0x00 | 'a' 'g' 'e' 'n' 't' '.' 'p' 'i' 'n' 'g' ) 
-		if(client.available()){
-			
+		if(_socket.available()){
 			//reading 5 bytes for the header
 			for(int i = 0; i < sizeof(_header); i++){
-				_header[i] = client.read();
+				_header[i] = _socket.read();
 			}
 			
 			//reading 8 bytes for the datalength
 			for(int i = 0; i < sizeof(length); i++){
-				length[i] = client.read();
+				length[i] = _socket.read();
 			}
 			
 			//calculating the datalength from giiven bytearray
@@ -81,7 +78,7 @@ String ZabbixAgent::listen(){
 			//reading as many bytes as given in datalength and converting it into a string
 			byte data[datalength];
 			for(int i = 0; i < datalength; i++){
-				data[i] = client.read();
+				data[i] = _socket.read();
 				msg += char(data[i]);
 			}
 		}
@@ -96,12 +93,12 @@ String ZabbixAgent::listen(){
 bool ZabbixAgent::answer(String message){
 	
 	//sending the same header received before
-	for(int i = 0; i < sizeof(header); i++){
-		_socket.write(header[i]);
+	for(int i = 0; i < sizeof(_header); i++){
+		_socket.write(_header[i]);
 	}
 	
 	//sending 8 bytes to communicate the length of following data
-	client.write(byte(sizeof(message))); //Only working with datalength <= 255 @TODO fix
+	_socket.write(byte(sizeof(message))); //Only working with datalength <= 255 @TODO fix
 	for(int i = 0; i < 7; i++){
 		_socket.write(byte(0x00));
 	}

@@ -19,27 +19,26 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef Morse_h
-#define Morse_h
+#ifndef ZabbixAgent_h
+#define ZabbixAgent_h
 
 #include "Arduino.h"
-#include "Client.h"
-#include "Server.h"
+#include <ESP8266WiFi.h>
+
 
 #define ZABBIX_PORT 10050
 #define HEADER_LENGTH 5
 
 class ZabbixAgent{
-public:
-	ZabbixAgent();
-	String listen(Server serverSocket);
-	bool answer(String message);
+	public:
+		ZabbixAgent(WiFiServer&);
+		String listen();
+		bool answer(String);
 	
-private:
-	Server _serverSocket;
-	Client _socket;
-	byte _header[HEADER_LENGTH];
-	
-}
+	private:
+		WiFiServer& _serverSocket;
+		WiFiClient _socket;
+		byte _header[HEADER_LENGTH];
+};
 
 #endif
